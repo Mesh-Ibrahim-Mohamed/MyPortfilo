@@ -1,0 +1,371 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  FiImage, 
+  FiMessageSquare, 
+  FiEye, 
+  FiTrendingUp,
+  FiCalendar,
+  FiEdit,
+  FiPlus,
+  FiTrendingDown,
+  FiMinus
+} from 'react-icons/fi';
+import { useAdmin } from '../../context/admin-context';
+
+// Dashboard stat card component
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  change?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  color: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, change, trend, color }) => {
+  const getTrendIcon = () => {
+    if (trend === 'up') return <FiTrendingUp className="w-4 h-4 text-green-500" />;
+    if (trend === 'down') return <FiTrendingDown className="w-4 h-4 text-red-500" />;
+    return <FiMinus className="w-4 h-4 text-gray-500" />;
+  };
+
+  const getColorClasses = () => {
+    const colors = {
+      purple: 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400',
+      blue: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
+      green: 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400',
+      orange: 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400',
+    };
+    return colors[color as keyof typeof colors] || colors.purple;
+  };
+
+  return (
+    <div className="bg-white/80 dark:bg-black/40 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-white/10 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          {change && (
+            <div className="flex items-center mt-2">
+              {getTrendIcon()}
+              <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">{change}</span>
+            </div>
+          )}
+        </div>
+        <div className={`p-3 rounded-lg border ${getColorClasses()}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Activity item component
+interface ActivityItemProps {
+  title: string;
+  description: string;
+  time: string;
+  icon: React.ReactNode;
+  iconBg: string;
+}
+
+const ActivityItem: React.FC<ActivityItemProps> = ({ title, description, time, icon, iconBg }) => {
+  return (
+    <div className="flex items-start py-4">
+      <div className={`flex-shrink-0 w-8 h-8 rounded-full ${iconBg} flex items-center justify-center`}>
+        {icon}
+      </div>
+      <div className="ml-3 flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{title}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{time}</p>
+      </div>
+    </div>
+  );
+};
+
+// Quick action component
+interface QuickActionProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  to: string;
+  color: string;
+}
+
+const QuickAction: React.FC<QuickActionProps> = ({ title, description, icon, to, color }) => {
+  const getColorClasses = () => {
+    const colors = {
+      purple: 'hover:bg-purple-50 dark:hover:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+      blue: 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+      green: 'hover:bg-green-50 dark:hover:bg-green-900/20 border-green-200 dark:border-green-800',
+    };
+    return colors[color as keyof typeof colors] || colors.purple;
+  };
+
+  return (
+    <Link
+      to={to}
+      className={`block p-4 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-200 ${getColorClasses()}`}
+    >
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          {icon}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{title}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{description}</p>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+export const Dashboard: React.FC = () => {
+  const { fetchDashboardStats, fetchPopularContent } = useAdmin();
+  const [stats, setStats] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [popularContent, setPopularContent] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getStats = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetchDashboardStats();
+        const counts = response.data.counts;
+        const recent = response.data.recent;
+        
+        // Format stats
+        const formattedStats = [
+          {
+            title: 'Total Blogs',
+            value: counts.blogs,
+            icon: <FiEdit size={20} />,
+            color: 'purple',
+            change: `${counts.featuredBlogs} featured`
+          },
+          {
+            title: 'Total Projects',
+            value: counts.projects,
+            icon: <FiPlus size={20} />,
+            color: 'blue',
+            change: `${counts.featuredProjects} featured`
+          },
+          {
+            title: 'Gallery Items',
+            value: counts.gallery,
+            icon: <FiImage size={20} />,
+            color: 'green',
+            change: `${counts.featuredGallery} featured`
+          },
+          {
+            title: 'Contact Messages',
+            value: counts.contacts,
+            icon: <FiMessageSquare size={20} />,
+            color: 'orange',
+            change: `${counts.unreadContacts} unread`
+          }
+        ];
+        
+        setStats(formattedStats);
+        
+        // Format recent activity
+        const allRecent = [
+          ...recent.blogs.map((blog: any) => ({
+            title: blog.title,
+            description: `New blog post published`,
+            time: new Date(blog.createdAt).toLocaleDateString(),
+            icon: <FiEdit size={16} />,
+            iconBg: 'bg-purple-500/20'
+          })),
+          ...recent.projects.map((project: any) => ({
+            title: project.title,
+            description: `New project added`,
+            time: new Date(project.createdAt).toLocaleDateString(),
+            icon: <FiPlus size={16} />,
+            iconBg: 'bg-blue-500/20'
+          })),
+          ...recent.contacts.map((contact: any) => ({
+            title: contact.subject || 'New Contact',
+            description: `Message from ${contact.name}`,
+            time: new Date(contact.createdAt).toLocaleDateString(),
+            icon: <FiMessageSquare size={16} />,
+            iconBg: 'bg-orange-500/20'
+          }))
+        ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+        
+        setRecentActivity(allRecent);
+        
+        // Fetch popular content
+        const popularResponse = await fetchPopularContent();
+        setPopularContent(popularResponse.data.popularContent);
+        
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    getStats();
+  }, [fetchDashboardStats, fetchPopularContent]);
+
+  const quickActions = [
+    { 
+      title: 'New Blog Post', 
+      description: 'Create a new blog article', 
+      icon: <FiEdit size={20} className="text-purple-400" />, 
+      to: '/dashboard/blogs/form',
+      color: 'purple'
+    },
+    { 
+      title: 'New Project', 
+      description: 'Add a new project to showcase', 
+      icon: <FiPlus size={20} className="text-blue-400" />, 
+      to: '/dashboard/projects/form',
+      color: 'blue'
+    },
+    { 
+      title: 'Upload Images', 
+      description: 'Add new images to your gallery', 
+      icon: <FiImage size={20} className="text-green-400" />, 
+      to: '/dashboard/gallery/form',
+      color: 'green'
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="py-6">
+        <div className="flex flex-wrap items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Loading your portfolio overview...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1,2,3,4].map((i) => <div key={i} className="h-32 bg-gray-200 dark:bg-white/5 rounded-xl animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-6">
+        <div className="text-red-600 dark:text-red-400 text-center font-medium">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-6">
+      <div className="flex flex-wrap items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Welcome back! Here's an overview of your portfolio.</p>
+        </div>
+        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <FiCalendar />
+          <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, index) => (
+          <StatCard key={index} {...stat} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <div className="bg-white/80 dark:bg-black/40 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-white/10 shadow-lg p-6 lg:col-span-1">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+          <div className="space-y-4">
+            {quickActions.map((action, index) => (
+              <QuickAction key={index} {...action} />
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white/80 dark:bg-black/40 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-white/10 shadow-lg p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h2>
+            <Link to="/dashboard/activity" className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300">
+              View All
+            </Link>
+          </div>
+          <div className="divide-y divide-gray-200 dark:divide-white/10">
+            {recentActivity.length === 0 ? (
+              <div className="text-gray-500 dark:text-gray-400 text-center py-8">No recent activity found.</div>
+            ) : (
+              recentActivity.map((activity, index) => (
+                <ActivityItem key={index} {...activity} />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Popular Content */}
+        <div className="bg-white/80 dark:bg-black/40 backdrop-blur-lg rounded-xl border border-gray-200 dark:border-white/10 shadow-lg p-6 lg:col-span-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Popular Content</h2>
+            <Link to="/dashboard/analytics" className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300">
+              View Analytics
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+              <thead className="bg-gray-50 dark:bg-black/60">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
+                    Views
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                {popularContent.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      No popular content available yet. Create some blogs and projects to see analytics here.
+                    </td>
+                  </tr>
+                ) : (
+                  popularContent.map((content, index) => (
+                    <tr key={index} className={`${index % 2 === 0 ? 'bg-gray-50 dark:bg-white/5' : ''} hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-150`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {content.title}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {content.type}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        <div className="flex items-center">
+                          <FiEye className="mr-1 text-gray-500 dark:text-gray-400" />
+                          {content.views.toLocaleString()}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
