@@ -186,10 +186,11 @@ export const HeroSection = () => {
     <div className="relative">
       {/* Glass effect frame */}
       <div className="w-[200px] h-[200px] md:w-[400px] md:h-[400px] rounded-full backdrop-blur-[10px] border-4 border-purple-500 flex items-center justify-center relative overflow-hidden">
-        {/* Placeholder for image */}
-        <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
-          <div className="text-5xl sm:text-6xl">👨‍💻</div>
-        </div>
+        <img
+          src="/photo.jpg"
+          alt="Profile"
+          className="w-full h-full object-cover"
+        />
 
         {/* Subtle glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-xl opacity-50 -z-10" />
